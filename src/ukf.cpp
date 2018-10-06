@@ -54,6 +54,24 @@ UKF::UKF() {
 
   Hint: one or more values initialized above might be wildly off...
   */
+  // set init to true after first measurement
+  is_initialized_ = False;
+
+  // num state dimensions
+  n_x_ = 5;
+
+  // num state dimensions + noise vector [std_a_, std_yawdd_]
+  n_aug_ = 7;
+
+  // lambda value
+  lambda_ = 3 - n_aug_;
+
+  // initialize weights
+  weights = VectordXd(2*n_aug_+1);
+  weights(0) = lambda / (lambda + n_aug_);
+  for (int i=0; i < 2*n_aug_+1; ++i) {
+	  weights(i) = 0.5/(n_aug_ + lambda);
+  }
 }
 
 UKF::~UKF() {}
