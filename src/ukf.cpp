@@ -55,7 +55,7 @@ UKF::UKF() {
   Hint: one or more values initialized above might be wildly off...
   */
   // set init to true after first measurement
-  is_initialized_ = False;
+  is_initialized_ = false;
 
   // num state dimensions
   n_x_ = 5;
@@ -87,6 +87,34 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+	// check if first measurement
+	if (!is_initialized_) {
+		cout << "UKF first measurement initializing..." << endl;
+		// initialize state vector x_ as 1's
+		x_.fill(1.0);
+		// initialize covariance P_ as identity matrix
+		P_.setIdentity(5,5);
+
+		// check measurement type and use_ variable
+		if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
+			// set state vector px and py with laser measurements
+			x_(0) = meas_package.raw_measurements_(0);
+			x_(1) = meas_package.raw_measurements_(1);	
+		}
+		else if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
+			// convert radar measurements from polar to cartesian
+			double px = cos(measurement_pack.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
+			double py = sin(measurement_pack.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
+			// set state vector px and py with radar measurements
+			x_(0) = px;
+			x_(1) = py;	
+
+		}
+
+		// finish first measurement initialization
+		is_initialized_ = true;
+		time_us_ = meas_package.timestamp_;
+	}
 }
 
 /**
@@ -131,4 +159,4 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-}
+
