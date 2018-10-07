@@ -66,6 +66,9 @@ UKF::UKF() {
   // lambda value
   lambda_ = 3 - n_aug_;
 
+  // set Xsig_pred matrix size
+  Xsig_pred_ = MatrixXd(n_x_,2*n_aug_+1);
+
   // initialize weights
   weights_ = VectorXd(2*n_aug_+1);
   weights_(0) = lambda_ / (lambda_ + n_aug_);
@@ -137,6 +140,10 @@ void UKF::Prediction(double delta_t) {
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
 
+	////////////////////////
+	// GENERATE SIGMA POINTS
+	////////////////////////
+	
 	// create augmented state vector
 	VectorXd x_aug = VectorXd(n_aug_);
 	x_aug.fill(0);
@@ -158,6 +165,54 @@ void UKF::Prediction(double delta_t) {
 	for (int i=0; i < n_aug_; ++i) {
 		Xsig_aug.col(i+1) = x_aug + sqrt(lambda_+n_aug_)*A.col(i);
 		Xsig_aug.col(i+n_aug_+1) = x_aug - sqrt(lambda_+n_aug_)*A.col(i);
+	}
+	
+	////////////////////////
+	// PREDICTE SIGMA POINTS
+	////////////////////////
+	
+	// loop through each sigma point
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		// define intermediate state variables for readability
+		double px = Xsig_aug(0,i);
+		double py = Xsig_aug(1,i);
+		double v = Xsig_aug(2,i);
+		double yaw = Xsig_aug(3,i);
+		double yaw_dot = Xsig_aug(4,i);
+		double noise_a = Xsig_aug(5,i);
+		double noise_yaw = Xsig_aug(6,i);
+
+		// predicted location variables
+		double px_pred, py_pred, v_pred, yaw_pred, yaw_dot_pred;
+
+		// set px and py predictions and avoid 0 division error
+		if (fabs(yaw_dot) > 0.001) {
+			px_pred = px + v/yaw_dot*(sin(yaw + yaw_dot*delta_t) - sin(yaw));
+			py_pred = py + v/yaw_dot*(-cos(yaw + yaw_dot*delta_t) + cos(yaw));
+		}
+		else {
+			px_pred = v*cos(yaw)*delta_t;
+			py_pred = v*sin(yaw)*delta_t;
+		}
+
+		// set v, yaw, and yaw_dot predictions
+		v_pred = v;
+		yaw_pred = yaw + yaw_dot*delta_t;
+		yaw_dot_pred = yaw_dot;
+
+		// add noise
+		px_pred += 0.5*(delta_t*delta_t)*cos(yaw)*noise_a;
+		py_pred += 0.5*(delta_t*delta_t)*sin(yaw)*noise_a;
+		v_pred += delta_t*noise_a;
+		yaw_pred += 0.5*(delta_t*delta_t)*noise_yaw;
+		yaw_dot_pred += delta_t*noise_yaw;
+
+		// add predicted sigma points to Xsig_pred matrix
+		Xsig_pred_(0,i) = px_pred;
+		Xsig_pred_(1,i) = py_pred;
+		Xsig_pred_(2,i) = v_pred;
+		Xsig_pred_(3,i) = yaw_pred;
+		Xsig_pred_(4,i) = yaw_dot_pred;
 	}
 }
 
