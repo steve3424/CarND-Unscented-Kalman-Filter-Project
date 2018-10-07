@@ -67,10 +67,10 @@ UKF::UKF() {
   lambda_ = 3 - n_aug_;
 
   // initialize weights
-  weights = VectordXd(2*n_aug_+1);
-  weights(0) = lambda / (lambda + n_aug_);
+  weights_ = VectordXd(2*n_aug_+1);
+  weights_(0) = lambda_ / (lambda_ + n_aug_);
   for (int i=0; i < 2*n_aug_+1; ++i) {
-	  weights(i) = 0.5/(n_aug_ + lambda);
+	  weights_(i) = 0.5/(n_aug_ + lambda_);
   }
 }
 
@@ -103,8 +103,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 		}
 		else if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
 			// convert radar measurements from polar to cartesian
-			double px = cos(measurement_pack.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
-			double py = sin(measurement_pack.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
+			double px = cos(meas_package.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
+			double py = sin(meas_package.raw_measurements_(1))*measurement_pack.raw_measurements_(0);
 			// set state vector px and py with radar measurements
 			x_(0) = px;
 			x_(1) = py;	
