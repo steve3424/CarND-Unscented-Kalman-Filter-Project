@@ -69,12 +69,8 @@ UKF::UKF() {
   // set Xsig_pred matrix size
   Xsig_pred_ = MatrixXd(n_x_,2*n_aug_+1);
 
-  // initialize weights
+  // set weight vector size
   weights_ = VectorXd(2*n_aug_+1);
-  weights_(0) = lambda_ / (lambda_ + n_aug_);
-  for (int i=0; i < 2*n_aug_+1; ++i) {
-	  weights_(i) = 0.5/(n_aug_ + lambda_);
-  }
 }
 
 UKF::~UKF() {}
@@ -214,6 +210,39 @@ void UKF::Prediction(double delta_t) {
 		Xsig_pred_(3,i) = yaw_pred;
 		Xsig_pred_(4,i) = yaw_dot_pred;
 	}
+
+	//////////////////////////////
+	// PREDICT MEAN AND COVARIANCE
+	//////////////////////////////
+
+	// set weight values
+	double weight_0 = lambda_ / (lambda_+n_aug_);	
+	weights_(0) = weight_0;
+	for (int i=1; i < 2*n_aug_+1; ++i) {
+		double weight_i = 0.5 / (lambda_ + n_aug_);
+		weights_(i) = weight_i;
+	}
+
+	// predict mean
+	VectorXd x_pred = VectorXd(n_x_);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		x_pred += weights_(i)*Xsig_pred_.col(i);
+	}
+	// predict covariance
+	MatrixXd P_pred = MatrixXd(n_x_, n_x_);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		// calculate state diff
+		VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
+		// normalize angle
+		while (x_diff(3) > M_PI) {x_diff(3) -= 2*M_PI;}
+		while (x_diff(3) < M_PI) {x_diff(3) += 2*M_PI;}
+		// calculate P 
+		P_pred += weights_(i)*x_diff*x_diff.transpose();
+	}
+
+	// set x_ and P_ to predicted mean and covariance
+	x_ = x_pred;
+	P_ = P_pred;
 }
 
 /**
