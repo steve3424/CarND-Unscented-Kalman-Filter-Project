@@ -114,7 +114,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 		// finish first measurement initialization
 		is_initialized_ = true;
 		time_us_ = meas_package.timestamp_;
+		return;
 	}
+	
+	// calculate time change
+	double delta_t = meas_package.timestamp_ - time_us_;
+
+	// call prediction
+	Prediction(delta_t);
 }
 
 /**
@@ -129,6 +136,29 @@ void UKF::Prediction(double delta_t) {
   Complete this function! Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
+
+	// create augmented state vector
+	VectorXd x_aug = VectorXd(n_aug_);
+	x_aug.fill(0);
+	x_aug.head(n_x_) = x_;
+
+	// create augmented covariance matrix
+	MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
+	P_aug.fill(0.0);
+	P_aug.topLeftCorner(n_x_, n_x_);
+	P_aug(n_x_,n_x_) = std_a_*std_a_;
+	P_aug(n_x_+1, n_x_+1) = std_yawdd_*std_yawdd_;
+
+	// calculate square root matrix
+	MatrixXd A = P_aug.llt().matrixL();
+	
+	// create augmented sigma points
+	MatrixXd Xsig_aug = MatrixXd(n_aug_, 2*n_aug_+1);
+	Xsig_aug.col(0) = x_aug;
+	for (int i=0; i < n_aug_; ++i) {
+		Xsig_aug.col(i+1) = x_aug + sqrt(lambda_+n_aug_)*A.col(i);
+		Xsig_aug.col(i+n_aug_+1) = x_aug - sqrt(lambda_+n_aug_)*A.col(i);
+	}
 }
 
 /**
