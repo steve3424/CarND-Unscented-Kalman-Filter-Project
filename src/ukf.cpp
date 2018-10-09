@@ -25,10 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 30;
+  std_a_ = 0.2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 30;
+  std_yawdd_ = 0.2;
   
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
@@ -136,6 +136,7 @@ void UKF::Prediction(double delta_t) {
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
 
+
 	////////////////////////
 	// GENERATE SIGMA POINTS
 	////////////////////////
@@ -148,7 +149,7 @@ void UKF::Prediction(double delta_t) {
 	// create augmented covariance matrix
 	MatrixXd P_aug = MatrixXd(n_aug_, n_aug_);
 	P_aug.fill(0.0);
-	P_aug.topLeftCorner(n_x_, n_x_);
+	P_aug.topLeftCorner(n_x_, n_x_) = P_;
 	P_aug(n_x_,n_x_) = std_a_*std_a_;
 	P_aug(n_x_+1, n_x_+1) = std_yawdd_*std_yawdd_;
 
@@ -163,6 +164,7 @@ void UKF::Prediction(double delta_t) {
 		Xsig_aug.col(i+n_aug_+1) = x_aug - sqrt(lambda_+n_aug_)*A.col(i);
 	}
 	
+
 	////////////////////////
 	// PREDICTE SIGMA POINTS
 	////////////////////////
@@ -211,6 +213,7 @@ void UKF::Prediction(double delta_t) {
 		Xsig_pred_(4,i) = yaw_dot_pred;
 	}
 
+
 	//////////////////////////////
 	// PREDICT MEAN AND COVARIANCE
 	//////////////////////////////
@@ -235,7 +238,7 @@ void UKF::Prediction(double delta_t) {
 		VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
 		// normalize angle
 		while (x_diff(3) > M_PI) {x_diff(3) -= 2*M_PI;}
-		while (x_diff(3) < M_PI) {x_diff(3) += 2*M_PI;}
+		while (x_diff(3) < -M_PI) {x_diff(3) += 2*M_PI;}
 		// calculate P 
 		P_pred += weights_(i)*x_diff*x_diff.transpose();
 	}
