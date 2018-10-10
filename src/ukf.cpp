@@ -117,7 +117,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	}
 	
 	// calculate time change
-	double delta_t = meas_package.timestamp_ - time_us_;
+	double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;
 
 	// call prediction
 	Prediction(delta_t);
