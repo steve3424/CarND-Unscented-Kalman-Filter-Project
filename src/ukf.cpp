@@ -189,8 +189,8 @@ void UKF::Prediction(double delta_t) {
 			py_pred = py + v/yaw_dot*(-cos(yaw + yaw_dot*delta_t) + cos(yaw));
 		}
 		else {
-			px_pred = v*cos(yaw)*delta_t;
-			py_pred = v*sin(yaw)*delta_t;
+			px_pred = px + v*cos(yaw)*delta_t;
+			py_pred = py + v*sin(yaw)*delta_t;
 		}
 
 		// set v, yaw, and yaw_dot predictions
