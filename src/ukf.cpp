@@ -271,6 +271,33 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the lidar NIS.
   */
+
+	////////////////////////////
+	//PREDICT MEASUREMENT SIGMAS
+	////////////////////////////
+
+	// MEAN PREDICTION
+	// measurement prediction is same as x_ prediction
+	VectorXd z_pred = x_.head(2);	
+
+	// PREDICT COVARIANCE
+	MatrixXd Zsig = Xsig_pred_.block(0,0,2,2*n_aug_+1);
+	MatrixXd S = MatrixXd(2,2);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		// residual
+		VectorXd z_diff = Zsig.col(i) - z_pred;
+		
+		// calculate S
+		S += weights_(i) * z_diff * z_diff.transpose();
+	}
+
+	// add noise
+	MatrixXd R = MatrixXd(2,2);
+	R << std_laspx_*std_laspx_ , 0,
+	 0, std_laspy_*std_laspy_;
+
+	S += R;
+
 }
 
 /**
@@ -291,8 +318,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	// PREDICT MEASUREMENT SIGMAS
 	/////////////////////////////
 	
+	// TRANSFORM TO MEASUREMENT SPACE
 	MatrixXd Zsig = MatrixXd(3, 2*n_aug_+1);
-	// transform Zsig_pred_ to radar space
 	for (int i=0; i < 2*n_aug_+1; ++i) {
 		// intermediate variables for readibility
 		double px = Xsig_pred_(0,i);
@@ -342,4 +369,5 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	0, 0, std_radrd_*std_radrd_; 
 	
 	S += R;
+
 }
