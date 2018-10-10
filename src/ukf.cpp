@@ -69,8 +69,14 @@ UKF::UKF() {
   // set Xsig_pred matrix size
   Xsig_pred_ = MatrixXd(n_x_,2*n_aug_+1);
 
-  // set weight vector size
+  // initialize weights
   weights_ = VectorXd(2*n_aug_+1);
+  double weight_0 = lambda_ / (lambda_+n_aug_);	
+  weights_(0) = weight_0;
+  for (int i=1; i < 2*n_aug_+1; ++i) {
+	double weight_i = 0.5 / (lambda_ + n_aug_);
+	weights_(i) = weight_i;
+  }
 }
 
 UKF::~UKF() {}
@@ -226,14 +232,6 @@ void UKF::Prediction(double delta_t) {
 	// PREDICT MEAN AND COVARIANCE
 	//////////////////////////////
 
-	// set weight values
-	double weight_0 = lambda_ / (lambda_+n_aug_);	
-	weights_(0) = weight_0;
-	for (int i=1; i < 2*n_aug_+1; ++i) {
-		double weight_i = 0.5 / (lambda_ + n_aug_);
-		weights_(i) = weight_i;
-	}
-
 	// predict mean
 	VectorXd x_pred = VectorXd(n_x_);
 	x_pred.fill(0.0);
@@ -333,14 +331,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		Zsig(2,i) = (px*cos(yaw)*v + py*sin(yaw)*v)/ sqrt(px*px + py*py); // r_dot
 	}
 
-
-	// set weight values
-	double weight_0 = lambda_ / (lambda_+n_aug_);	
-	weights_(0) = weight_0;
-	for (int i=1; i < 2*n_aug_+1; ++i) {
-		double weight_i = 0.5 / (lambda_ + n_aug_);
-		weights_(i) = weight_i;
-	}
 
 	// MEAN PREDICTION
 	VectorXd z_pred = VectorXd(3);
