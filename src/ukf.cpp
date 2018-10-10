@@ -119,8 +119,16 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	// calculate time change
 	double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;
 
-	// call prediction
+	// call prediction update
 	Prediction(delta_t);
+
+	// call measurement update
+	if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+		UpdateRadar(meas_package);	
+	}
+	else {
+		UpdateLidar(meas_package);
+	}
 }
 
 /**
@@ -278,4 +286,60 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
+
+	/////////////////////////////
+	// PREDICT MEASUREMENT SIGMAS
+	/////////////////////////////
+	
+	MatrixXd Zsig = MatrixXd(3, 2*n_aug_+1);
+	// transform Zsig_pred_ to radar space
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		// intermediate variables for readibility
+		double px = Xsig_pred_(0,i);
+		double py = Xsig_pred_(1,i);
+		double v = Xsig_pred_(2,i);
+		double yaw = Xsig_pred_(3,i);
+
+		// measurement transformation
+		Zsig(0,i) = sqrt(px*px + py*py); // r
+		Zsig(1,i) = atan2(py,px); // phi
+		Zsig(2,i) = (px*cos(yaw)*v + py*sin(yaw)*v)/ sqrt(px*px + py*py); // r_dot
+	}
+
+
+	// set weight values
+	double weight_0 = lambda_ / (lambda_+n_aug_);	
+	weights_(0) = weight_0;
+	for (int i=1; i < 2*n_aug_+1; ++i) {
+		double weight_i = 0.5 / (lambda_ + n_aug_);
+		weights_(i) = weight_i;
+	}
+
+	// MEAN PREDICTION
+	VectorXd z_pred = VectorXd(3);
+	z_pred.fill(0.0);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		z_pred += weights_(i)*Zsig.col(i);		
+	}
+
+	// COVARIANCE PREDICTION
+	MatrixXd S = MatrixXd(3,3);
+	S.fill(0.0);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		// residual
+		VectorXd z_diff = Zsig.col(i) - z_pred;
+	       	// normalize angle
+		while(z_diff(1) > M_PI){z_diff(1) -= 2*M_PI;}
+		while(z_diff(1) < -M_PI){z_diff(1) += 2*M_PI;}
+
+		S += weights_(i)*z_diff*z_diff.transpose();
+	}
+
+	// add measurement noise matrix
+	MatrixXd R = MatrixXd(3,3);
+	R << std_radr_*std_radr_, 0, 0,
+	 0, std_radphi_*std_radphi_, 0,
+	0, 0, std_radrd_*std_radrd_; 
+	
+	S += R;
 }
