@@ -228,11 +228,13 @@ void UKF::Prediction(double delta_t) {
 
 	// predict mean
 	VectorXd x_pred = VectorXd(n_x_);
+	x_pred.fill(0.0);
 	for (int i=0; i < 2*n_aug_+1; ++i) {
 		x_pred += weights_(i)*Xsig_pred_.col(i);
 	}
 	// predict covariance
 	MatrixXd P_pred = MatrixXd(n_x_, n_x_);
+	P_pred.fill(0.0);
 	for (int i=0; i < 2*n_aug_+1; ++i) {
 		// calculate state diff
 		VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
