@@ -270,31 +270,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   You'll also need to calculate the lidar NIS.
   */
 
-	////////////////////////////
-	//PREDICT MEASUREMENT SIGMAS
-	////////////////////////////
 
-	// MEAN PREDICTION
-	// measurement prediction is same as x_ prediction
-	VectorXd z_pred = x_.head(2);	
-
-	// PREDICT COVARIANCE
-	MatrixXd Zsig = Xsig_pred_.block(0,0,2,2*n_aug_+1);
-	MatrixXd S = MatrixXd(2,2);
-	for (int i=0; i < 2*n_aug_+1; ++i) {
-		// residual
-		VectorXd z_diff = Zsig.col(i) - z_pred;
-		
-		// calculate S
-		S += weights_(i) * z_diff * z_diff.transpose();
-	}
-
-	// add noise
-	MatrixXd R = MatrixXd(2,2);
-	R << std_laspx_*std_laspx_ , 0,
-	 0, std_laspy_*std_laspy_;
-
-	S += R;
 
 }
 
@@ -316,7 +292,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	// PREDICT MEASUREMENT SIGMAS
 	/////////////////////////////
 	
-	// TRANSFORM TO MEASUREMENT SPACE
+	// TRANSFORM SIGMAS TO MEASUREMENT SPACE
 	MatrixXd Zsig = MatrixXd(3, 2*n_aug_+1);
 	for (int i=0; i < 2*n_aug_+1; ++i) {
 		// intermediate variables for readibility
@@ -325,7 +301,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		double v = Xsig_pred_(2,i);
 		double yaw = Xsig_pred_(3,i);
 
-		// measurement transformation
+		// calculate h(x) for each sigma point
 		Zsig(0,i) = sqrt(px*px + py*py); // r
 		Zsig(1,i) = atan2(py,px); // phi
 		Zsig(2,i) = (px*cos(yaw)*v + py*sin(yaw)*v)/ sqrt(px*px + py*py); // r_dot
