@@ -25,12 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  //std_a_ = 1;
-  std_a_ = 3.5/2;
+  std_a_ = 0.2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  //std_yawdd_ = 1;
-  std_yawdd_ = M_PI/4;
+  std_yawdd_ = 0.2;
 
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
@@ -99,11 +97,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	if (!is_initialized_) {
 		cout << "UKF first measurement initializing..." << endl;
 		// initialize state vector x_ as 1's
-		//x_.fill(1.0);
-		x_ << 0.6, 0.6, 5.5, 0, 0;
+		x_.fill(1.0);
+		
 		// initialize covariance P_ as identity matrix
 		P_ = MatrixXd::Identity(5,5);
-		P_ *= 0.1;
+
 		// check measurement type and use_ variable
 		if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
 			// set state vector px and py with laser measurements
@@ -128,19 +126,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	
 	// calculate time change
 	double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;
+	time_us_ = meas_package.timestamp_;
 
-	/*
-	std::cout << "Original" << std::endl;
-	std::cout << "x_ = \n" << x_ << std::endl;
-	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
-	*/
 	// call prediction update
 	Prediction(delta_t);
-	/*
-	std::cout << "Predicted" << std::endl;
-	std::cout << "x_ = \n" << x_ << std::endl;
-	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
-	*/
+	
 	// call measurement update
 	if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
 		UpdateRadar(meas_package);	
@@ -148,11 +138,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
 		UpdateLidar(meas_package);
 	}
-	/*
-	std::cout << "After measurement " << meas_package.sensor_type_ << std::endl;
-	std::cout << "x_ = \n" << x_ << std::endl;
-	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
-	*/
 }
 
 /**
@@ -328,30 +313,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-	/*
-	//TESTTESTTESTTESTTESTTESTTEST
-	
-	Xsig_pred_ << 
-		5.9374, 6.0640, 5.925, 5.9436, 5.9266, 5.9374, 5.9389, 5.9374, 5.8106, 5.9457, 5.9310, 5.9465, 5.9374, 5.9359, 5.93744,
-		1.48, 1.4436, 1.660, 1.4934, 1.5036, 1.48, 1.4868, 1.48, 1.5271, 1.3104, 1.4787, 1.4674, 1.48, 1.4851, 1.486,
-		2.204, 2.2841, 2.2455, 2.2958, 2.204, 2.204, 2.2395, 2.204, 2.1256, 2.1642, 2.1139, 2.204, 2.204, 2.1702, 2.2049,
-		0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337, 0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188, 0.5367, 0.535048,
-		0.352, 0.29997, 0.46212, 0.37633, 0.4841, 0.41872, 0.352, 0.38744, 0.40562, 0.24347, 0.32926, 0.2214, 0.28687, 0.352, 0.318159;
 
-	std_radr_ = 0.3;
-	std_radphi_ = 0.0175;
-	std_radrd_ = 0.1;	
-	
-	x_ << 5.93637, 1.49035, 2.20528, 0.536853, 0.353577;
-	P_ << 0.0054342, -0.002405, 0.0034157, -0.0034819, -0.00299378,
-   	-0.002405, 0.01084, 0.001492, 0.0098018, 0.00791091,
-	0.0034157, 0.001492, 0.0058012, 0.00077863, 0.000792973, 
-	-0.0034819, 0.0098018, 0.00077863, 0.011923, 0.0112491,
-	-0.0029937, 0.0079109, 0.00079297, 0.011249, 0.0126972;	
-	//TESTTESTTESTTESTTESTTEST
-	*/
-	
-	
 	/////////////////////////////
 	// PREDICT MEASUREMENT SIGMAS
 	/////////////////////////////
@@ -409,12 +371,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	// measurement 
 	VectorXd z = meas_package.raw_measurements_;
 
-	/*
-	///testtesttest
-	z << 5.9214, 0.2187, 2.0062;
-	//te-ttesttesttest
-	*/
-
 	// cross-correlation matrix
 	MatrixXd T = MatrixXd(n_x_, 3);
 	T.fill(0.0);
@@ -443,5 +399,4 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 	x_ = x_ + K * z_diff;
 	P_ = P_ - K * S * K.transpose();
-
 }
