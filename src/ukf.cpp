@@ -172,6 +172,7 @@ void UKF::Prediction(double delta_t) {
 	
 	// create augmented sigma points
 	MatrixXd Xsig_aug = MatrixXd(n_aug_, 2*n_aug_+1);
+	Xsig_aug.fill(0.0);
 	Xsig_aug.col(0) = x_aug;
 	for (int i=0; i < n_aug_; ++i) {
 		Xsig_aug.col(i+1) = x_aug + sqrt(lambda_+n_aug_)*A.col(i);
@@ -288,12 +289,38 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   You'll also need to calculate the radar NIS.
   */
 
+	/*
+	//TESTTESTTESTTESTTESTTESTTEST
+	
+	Xsig_pred_ << 
+		5.9374, 6.0640, 5.925, 5.9436, 5.9266, 5.9374, 5.9389, 5.9374, 5.8106, 5.9457, 5.9310, 5.9465, 5.9374, 5.9359, 5.93744,
+		1.48, 1.4436, 1.660, 1.4934, 1.5036, 1.48, 1.4868, 1.48, 1.5271, 1.3104, 1.4787, 1.4674, 1.48, 1.4851, 1.486,
+		2.204, 2.2841, 2.2455, 2.2958, 2.204, 2.204, 2.2395, 2.204, 2.1256, 2.1642, 2.1139, 2.204, 2.204, 2.1702, 2.2049,
+		0.5367, 0.47338, 0.67809, 0.55455, 0.64364, 0.54337, 0.5367, 0.53851, 0.60017, 0.39546, 0.51900, 0.42991, 0.530188, 0.5367, 0.535048,
+		0.352, 0.29997, 0.46212, 0.37633, 0.4841, 0.41872, 0.352, 0.38744, 0.40562, 0.24347, 0.32926, 0.2214, 0.28687, 0.352, 0.318159;
+
+	std_radr_ = 0.3;
+	std_radphi_ = 0.0175;
+	std_radrd_ = 0.1;	
+	
+	x_ << 5.93637, 1.49035, 2.20528, 0.536853, 0.353577;
+	P_ << 0.0054342, -0.002405, 0.0034157, -0.0034819, -0.00299378,
+   	-0.002405, 0.01084, 0.001492, 0.0098018, 0.00791091,
+	0.0034157, 0.001492, 0.0058012, 0.00077863, 0.000792973, 
+	-0.0034819, 0.0098018, 0.00077863, 0.011923, 0.0112491,
+	-0.0029937, 0.0079109, 0.00079297, 0.011249, 0.0126972;	
+	*/
+	//TESTTESTTESTTESTTESTTEST
+	
+	
+	
 	/////////////////////////////
 	// PREDICT MEASUREMENT SIGMAS
 	/////////////////////////////
 	
 	// TRANSFORM SIGMAS TO MEASUREMENT SPACE
 	MatrixXd Zsig = MatrixXd(3, 2*n_aug_+1);
+	Zsig.fill(0.0);
 	for (int i=0; i < 2*n_aug_+1; ++i) {
 		// intermediate variables for readibility
 		double px = Xsig_pred_(0,i);
@@ -336,4 +363,51 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	
 	S += R;
 
+	std::cout << "z_pred = " << z_pred << "\n" << std::endl;
+	std::cout << "S = " << S << "\n" << std::endl;
+
+	
+	/////////////////////
+	// MEASUREMENT UPDATE
+	/////////////////////
+	
+	// measurement 
+	VectorXd z = meas_package.raw_measurements_;
+
+
+	///testtesttest
+	//z << 5.9214, 0.2187, 2.0062;
+	//te-ttesttesttest
+
+	// cross-correlation matrix
+	MatrixXd T = MatrixXd(n_x_, 3);
+	T.fill(0.0);
+	for (int i=0; i < 2*n_aug_+1; ++i) {
+		VectorXd x_diff = Xsig_pred_.col(i) - x_;
+		VectorXd z_diff = Zsig.col(i) - z_pred;
+
+		//normalize angles
+		while(x_diff(3) > M_PI){x_diff(3) -= 2*M_PI;}
+		while(x_diff(3) < -M_PI){x_diff(3) += 2*M_PI;}
+		while(z_diff(1) > M_PI){z_diff(1) -= 2*M_PI;}
+		while(z_diff(1) < -M_PI){z_diff(1) += 2*M_PI;}
+
+		T += weights_(i)*x_diff*z_diff.transpose();
+	}
+
+	// kalman gain
+	MatrixXd K = T * S.inverse();
+
+	// residual
+	VectorXd z_diff = z - z_pred;
+
+	// normalize angle
+	while(z_diff(1) > M_PI){z_diff(1) -= 2*M_PI;}
+	while(z_diff(1) < -M_PI){z_diff(1) += 2*M_PI;}
+
+	x_ += K * z_diff;
+	P_ -= K * S * K.transpose();
+
+	std::cout << "x_ = " << x_ << "\n" << std::endl;
+	std::cout << "P_ = " << P_ << "\n" << std::endl;
 }
