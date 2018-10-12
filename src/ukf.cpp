@@ -25,10 +25,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 0.2;
+  std_a_ = 1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.2;
+  std_yawdd_ = 1;
   
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
@@ -98,7 +98,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 		// initialize state vector x_ as 1's
 		x_.fill(1.0);
 		// initialize covariance P_ as identity matrix
-		P_.setIdentity(5,5);
+		P_ = MatrixXd::Identity(5,5);
 
 		// check measurement type and use_ variable
 		if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
@@ -125,16 +125,30 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	// calculate time change
 	double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;
 
+	/*
+	std::cout << "Original" << std::endl;
+	std::cout << "x_ = \n" << x_ << std::endl;
+	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
+	*/
 	// call prediction update
 	Prediction(delta_t);
-
+	/*
+	std::cout << "Predicted" << std::endl;
+	std::cout << "x_ = \n" << x_ << std::endl;
+	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
+	*/
 	// call measurement update
-	if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+	if (meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_) {
 		UpdateRadar(meas_package);	
 	}
-	else {
+	else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
 		UpdateLidar(meas_package);
 	}
+	/*
+	std::cout << "After measurement " << meas_package.sensor_type_ << std::endl;
+	std::cout << "x_ = \n" << x_ << std::endl;
+	std::cout << "P_ = \n" << P_ << "\n" << std::endl;
+	*/
 }
 
 /**
@@ -354,7 +368,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		Zsig(2,i) = (px*cos(yaw)*v + py*sin(yaw)*v)/ sqrt(px*px + py*py); // r_dot
 	}
 
-	std::cout << "Zsig = " << Zsig << std::endl;
 
 	// MEAN PREDICTION
 	VectorXd z_pred = VectorXd(3);
@@ -384,9 +397,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	
 	S += R;
 
-	std::cout << "z_pred = " << z_pred << "\n" << std::endl;
-	std::cout << "S = " << S << "\n" << std::endl;
-
 	
 	/////////////////////
 	// MEASUREMENT UPDATE
@@ -395,10 +405,11 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	// measurement 
 	VectorXd z = meas_package.raw_measurements_;
 
-
+	/*
 	///testtesttest
 	z << 5.9214, 0.2187, 2.0062;
 	//te-ttesttesttest
+	*/
 
 	// cross-correlation matrix
 	MatrixXd T = MatrixXd(n_x_, 3);
@@ -426,9 +437,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	while(z_diff(1) > M_PI){z_diff(1) -= 2*M_PI;}
 	while(z_diff(1) < -M_PI){z_diff(1) += 2*M_PI;}
 
-	x_ += K * z_diff;
-	P_ -= K * S * K.transpose();
+	x_ = x_ + K * z_diff;
+	P_ = P_ - K * S * K.transpose();
 
-	std::cout << "x_ = " << x_ << "\n" << std::endl;
-	std::cout << "P_ = " << P_ << "\n" << std::endl;
 }
