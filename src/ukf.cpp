@@ -271,8 +271,30 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
   You'll also need to calculate the lidar NIS.
   */
 
+	// USE STANDARD KALMAN FILTER EQUATIONS
+	 
+	// measurement matrix
+	MatrixXd H = MatrixXd(2,5);
+	H << 1,0,0,0,0,
+	  0,1,0,0,0;
+	MatrixXd Ht = H.transpose();
 
+	// noise matrix
+	MatrixXd R = MatrixXd(2,2);
+	R << std_laspx_*std_laspx_, 0,
+	  0, std_laspy_*std_laspy_;
 
+	// equations
+	VectorXd z = meas_package.raw_measurements_;
+	VectorXd y = z - H * x_;
+	MatrixXd S = H * P_ * Ht + R;
+	MatrixXd K = P_ * Ht * S.inverse();
+
+	// new mean and covariance
+	x_ = x_ + K*y;
+	long x_size = x_.size();
+	MatrixXd I = MatrixXd::Identity(x_size,x_size);
+	P_ = (I - K * H) * P_;
 }
 
 /**
@@ -288,7 +310,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
   You'll also need to calculate the radar NIS.
   */
-
 	/*
 	//TESTTESTTESTTESTTESTTESTTEST
 	
@@ -309,9 +330,8 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	0.0034157, 0.001492, 0.0058012, 0.00077863, 0.000792973, 
 	-0.0034819, 0.0098018, 0.00077863, 0.011923, 0.0112491,
 	-0.0029937, 0.0079109, 0.00079297, 0.011249, 0.0126972;	
-	*/
 	//TESTTESTTESTTESTTESTTEST
-	
+	*/
 	
 	
 	/////////////////////////////
@@ -334,6 +354,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 		Zsig(2,i) = (px*cos(yaw)*v + py*sin(yaw)*v)/ sqrt(px*px + py*py); // r_dot
 	}
 
+	std::cout << "Zsig = " << Zsig << std::endl;
 
 	// MEAN PREDICTION
 	VectorXd z_pred = VectorXd(3);
@@ -376,7 +397,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 
 	///testtesttest
-	//z << 5.9214, 0.2187, 2.0062;
+	z << 5.9214, 0.2187, 2.0062;
 	//te-ttesttesttest
 
 	// cross-correlation matrix
