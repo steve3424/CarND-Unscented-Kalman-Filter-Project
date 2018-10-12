@@ -25,11 +25,13 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 1;
+  //std_a_ = 1;
+  std_a_ = 3.5/2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 1;
-  
+  //std_yawdd_ = 1;
+  std_yawdd_ = M_PI/4;
+
   //DO NOT MODIFY measurement noise values below these are provided by the sensor manufacturer.
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -64,7 +66,8 @@ UKF::UKF() {
   n_aug_ = 7;
 
   // lambda value
-  lambda_ = 3 - n_aug_;
+  //lambda_ = 3 - n_aug_;
+  lambda_ = max(3 - n_x_, 0);
 
   // set Xsig_pred matrix size
   Xsig_pred_ = MatrixXd(n_x_,2*n_aug_+1);
@@ -96,10 +99,11 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	if (!is_initialized_) {
 		cout << "UKF first measurement initializing..." << endl;
 		// initialize state vector x_ as 1's
-		x_.fill(1.0);
+		//x_.fill(1.0);
+		x_ << 0.6, 0.6, 5.5, 0, 0;
 		// initialize covariance P_ as identity matrix
 		P_ = MatrixXd::Identity(5,5);
-
+		P_ *= 0.1;
 		// check measurement type and use_ variable
 		if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
 			// set state vector px and py with laser measurements
