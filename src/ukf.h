@@ -67,6 +67,10 @@ public:
   ///* Sigma point spreading parameter
   double lambda_;
 
+  // vectors for NIS values
+  VectorXd r_nis_;
+  VectorXd l_nis_;
+
 
   /**
    * Constructor

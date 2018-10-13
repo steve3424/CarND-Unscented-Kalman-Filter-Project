@@ -78,6 +78,13 @@ UKF::UKF() {
 	double weight_i = 0.5 / (lambda_ + n_aug_);
 	weights_(i) = weight_i;
   }
+
+  // vectors to save NIS values
+  r_nis_ = VectorXd(5);
+  r_nis_.fill(0.0);
+
+  l_nis_ = VectorXd(5);
+  l_nis_.fill(0.0);
 }
 
 UKF::~UKF() {}
@@ -290,7 +297,8 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 
 	// equations
 	VectorXd z = meas_package.raw_measurements_;
-	VectorXd y = z - H * x_;
+	VectorXd z_pred = H * x_;
+	VectorXd y = z - z_pred;
 	MatrixXd S = H * P_ * Ht + R;
 	MatrixXd K = P_ * Ht * S.inverse();
 
@@ -299,6 +307,30 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
 	long x_size = x_.size();
 	MatrixXd I = MatrixXd::Identity(x_size,x_size);
 	P_ = (I - K * H) * P_;
+
+	// calculate NIS and put into correct bucket
+	double NIS = y.transpose() * S.inverse() * y;
+	if (5.991 < NIS) {
+		l_nis_(1)++;
+		l_nis_(2)++;
+		l_nis_(3)++;
+		l_nis_(4)++;
+	}
+	else if (4.605 < NIS) {
+		l_nis_(1)++;
+		l_nis_(2)++;
+		l_nis_(3)++;
+	}
+	else if (0.211 < NIS) {
+		l_nis_(1)++;
+		l_nis_(2)++;
+	}
+	else if (0.103 < NIS) {
+		l_nis_(1)++;
+	}
+
+	// increment total NIS calculations
+	l_nis_(0)++;
 }
 
 /**
@@ -398,6 +430,31 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 	while(z_diff(1) > M_PI){z_diff(1) -= 2*M_PI;}
 	while(z_diff(1) < -M_PI){z_diff(1) += 2*M_PI;}
 
+	// update mean and covariance
 	x_ = x_ + K * z_diff;
 	P_ = P_ - K * S * K.transpose();
+
+	// calculate NIS and place into correct bucket in r_nis_
+	double NIS = z_diff.transpose() * S.inverse() * z_diff;
+	if (7.815 < NIS) {
+		r_nis_(1)++;
+		r_nis_(2)++;
+		r_nis_(3)++;
+		r_nis_(4)++;
+	}
+	else if (6.251 < NIS) {
+		r_nis_(1)++;
+		r_nis_(2)++;
+		r_nis_(3)++;
+	}
+	else if (0.584 < NIS) {
+		r_nis_(1)++;
+		r_nis_(2)++;
+	}
+	else if (0.352 < NIS) {
+		r_nis_(1)++;
+	}
+
+	// increment total NIS value
+	r_nis_(0)++;
 }
