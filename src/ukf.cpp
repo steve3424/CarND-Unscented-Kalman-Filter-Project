@@ -101,6 +101,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 		
 		// initialize covariance P_ as identity matrix
 		P_ = MatrixXd::Identity(5,5);
+		P_ *= 0.7;
 
 		// check measurement type and use_ variable
 		if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_) {
